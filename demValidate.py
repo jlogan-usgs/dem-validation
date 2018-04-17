@@ -3,7 +3,7 @@
 
 # # Initial tests to run DEM validation
 
-# In[105]:
+# In[19]:
 
 
 import rasterio 
@@ -14,14 +14,14 @@ import seaborn as sns
 from scipy import ndimage
 
 
-# In[103]:
+# In[68]:
 
 
 #jupyter magic
-get_ipython().magic('matplotlib inline')
+get_ipython().magic('matplotlib notebook')
 
 
-# In[12]:
+# In[21]:
 
 
 #path to DEM
@@ -31,7 +31,7 @@ demfile = 'C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD_UAS-SfM-DEM_10c
 checkfile = 'C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpackTopoValidation.csv'
 
 
-# In[77]:
+# In[22]:
 
 
 #load DEM (geotiff)
@@ -53,7 +53,7 @@ dem[dem==dataset.nodatavals] = np.nan
 # #### x, y to col, row
 # `col, row = ~a * (x, y)`
 
-# In[113]:
+# In[23]:
 
 
 #get affine transform
@@ -61,7 +61,7 @@ a = dataset.affine
 a
 
 
-# In[7]:
+# In[24]:
 
 
 #Test affine
@@ -71,7 +71,7 @@ col, row = ~a * (dataset.bounds.left, dataset.bounds.top)
 print(str(col) + ', ' + str(row))
 
 
-# In[8]:
+# In[25]:
 
 
 #Test getting array coords with geocoords from validation file
@@ -83,7 +83,7 @@ col, row = ~a * (east, north)
 #need to check on order of x,y and col, row
 
 
-# In[98]:
+# In[26]:
 
 
 #try map_coordinates bilinear interp
@@ -91,19 +91,19 @@ z = ndimage.map_coordinates(dem, [[row],[col]], order=1, mode='constant', cval=-
 print(str(z))
 
 
-# In[37]:
+# In[27]:
 
 
 dem[5103,3179]
 
 
-# In[10]:
+# In[28]:
 
 
 a * (col, row)
 
 
-# In[15]:
+# In[29]:
 
 
 #get check points into dataframe
@@ -112,7 +112,7 @@ df = pd.read_csv(checkfile)
 df.head()
 
 
-# In[79]:
+# In[30]:
 
 
 #use affine to get DEM row, column into df
@@ -121,7 +121,7 @@ df['demcol'], df['demrow'] = ~a * (df['e'], df['n'])
 df.head()
 
 
-# In[99]:
+# In[31]:
 
 
 #use map_coordinates to do bilinear interp and place result in new df column
@@ -135,32 +135,26 @@ df.dropna(axis=0, subset=['dem_z'], inplace=True)
 df = df.loc[df['dem_z'] != -9999]
 
 
-# In[100]:
+# In[32]:
 
 
 df.head()
 
 
-# In[83]:
+# In[33]:
 
 
 #calculate residual (obs - pred), or (check-dem)
 df['resid'] = df['z'] - df['dem_z']
 
 
-# In[106]:
+# In[34]:
 
 
 df['resid'].mean()
 
 
-# In[107]:
-
-
-imgplot = plt.imshow(dem)
-
-
-# In[109]:
+# In[41]:
 
 
 #make a hillshade
@@ -180,19 +174,19 @@ def hillshade(array,azimuth,angle_altitude):
     return 255*(shaded + 1)/2
 
 
-# In[110]:
+# In[42]:
 
 
 dem_hillshade = hillshade(dem,300,45)
 
 
-# In[111]:
+# In[43]:
 
 
 imgplot = plt.imshow(dem_hillshade, cmap='gray')
 
 
-# In[117]:
+# In[70]:
 
 
 #on the fly hillshading
@@ -200,14 +194,25 @@ imgplot = plt.imshow(dem_hillshade, cmap='gray')
 
 from matplotlib.colors import LightSource
 ls = LightSource(azdeg=315,altdeg=45)
-cmap = plt.cm.gist_earth
-
+fig=plt.figure(figsize=(9,9))
 plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
 
+#plot points, using img coords, colors as abs(resid)
+plt.scatter(x=df['demcol'], y=df['demrow'], c=np.abs(df['resid']),cmap=plt.cm.jet, s=8,alpha=0.7)
 
-# In[118]:
+
+# In[53]:
 
 
-rgb = ls.shade(dem, cmap=cmap, blend_mode='overlay', vert_exag=1.5, dx=0.1, dy=0.1)
+cmap = plt.cm.gist_earth
+rgb = ls.shade(dem, cmap=cmap, blend_mode='overlay', vert_exag=2, dx=0.1, dy=0.1, vmin=np.nanmin(dem), vmax=np.nanmax(dem))
+fig=plt.figure(figsize=(9,9))
+plt.suptitle('Color Shaded Relief')
 plt.imshow(rgb)
+
+
+# In[57]:
+
+
+x, y = a * (col, row)
 
