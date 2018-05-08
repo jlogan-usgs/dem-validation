@@ -177,7 +177,7 @@ if mapplot:
     print('Plotting map')
     ls = LightSource(azdeg=315,altdeg=45)
     fig_map = plt.figure(figsize=(9,9))
-    plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
+    plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray', transform=mapcrs)
     
     #plot points, using img coords, colors as abs(resid)
     plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
@@ -185,7 +185,7 @@ if mapplot:
     #need to try to fix map ticks?  https://snorfalorpagus.net/blog/2014/06/26/using-cartopy-with-rasterio/
     
     #get crs from raster dataset
-    ccrs.epsg(dataset.crs.to_dict()['init'].replace('epsg:',''))
+    mapcrs = ccrs.epsg(dataset.crs.to_dict()['init'].replace('epsg:',''))
 
 
 
