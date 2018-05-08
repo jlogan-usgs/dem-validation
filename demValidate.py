@@ -120,10 +120,10 @@ stdev = df['resid'].std()
 
 
 #print results
-print('RMSE: ' + str(rmse))
-print('Mean offset: ' + str(mean_error))
-print('Std. Dev.: ' + str(stdev))
-print('MAE: ' + str(mae))
+print('RMSE: ' + '{:0.3f}'.format(rmse))
+print('Mean offset: ' + '{:0.3f}'.format(mean_error))
+print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
+print('MAE: ' + '{:0.3f}'.format(mae))
 
 #Plot histogram?
 if errorplot:
