@@ -34,7 +34,7 @@ outfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpa
 errorplotconst=True
 
 #plot map? [default = False]
-mapplotconst=True
+mapplotconst=False
 
 #=======================PARSE ARGUMENTS======================
 descriptionstr = ('  Script to validate DEMs using check points from csv file')
@@ -44,6 +44,8 @@ parser.add_argument('-dem', '--dem', dest='demfile', nargs='?', const='undefined
                     help='DEM geotiff')
 parser.add_argument('-checkpoints','--checkpointfile', dest='checkfile', nargs='?', const='undefined', type=str, 
                     help='Comma delimited text file with check points, needs header with n, e, z')
+parser.add_argument('-outcsv','--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str, 
+                    help='Output comma delimited text file with interpolated DEM values')
 parser.add_argument('-plot','--errorplot', dest='errorplot', nargs='?', const=True, type=bool, 
                     help='Plot error distribution plot [boolean]')
 parser.add_argument('-map','--mapplot', dest='mapplot', nargs='?', const=False, type=bool, 
@@ -70,6 +72,16 @@ else:
     #use demfilefileconst from top of script
     checkfile = checkfileconst
 print('Input check point file: ' + checkfile)
+
+if args.outfile is not None:
+    #Then use command line argument
+    outfile = args.outfile
+    #remove quotes in string if supplied
+    outfile = outfile.replace('"', '').replace("'", '')
+else:
+    #use outfileconst from top of script
+    outfile = outfileconst
+print('Output csv file: ' + outfile)
 
 if args.errorplot is not None:
     #Then use command line argument
@@ -137,12 +149,14 @@ mean_error = df['resid'].mean()
 mae = df['resid'].abs().mean()
 stdev = df['resid'].std()
 
-
 #print results
 print('RMSE: ' + '{:0.3f}'.format(rmse))
 print('Mean offset: ' + '{:0.3f}'.format(mean_error))
 print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
 print('MAE: ' + '{:0.3f}'.format(mae))
+
+#export
+df.drop(['demrow', 'demcol'], axis=1).to_csv(outfile, float_format='%0.3f')
 
 #Plot histogram?
 if errorplot:
@@ -182,7 +196,7 @@ if mapplot:
     #plot points, using img coords, colors as abs(resid)
     plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
     
-    #need to try to fix map ticks?  https://snorfalorpagus.net/blog/2014/06/26/using-cartopy-with-rasterio/
+    
 
 
 
