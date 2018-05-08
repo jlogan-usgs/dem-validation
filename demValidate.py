@@ -10,9 +10,11 @@ import rasterio
 import numpy as np
 import pandas as pd
 from scipy import ndimage
+import argparse
+
 import seaborn as sns
 import matplotlib.pyplot as plt
-import argparse
+from matplotlib.colors import LightSource
 
 #Define input files here or in command line.  Command line arguments are used if both provided
 #path to DEM (has to be geotiff)
@@ -21,8 +23,11 @@ demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvC
 #path to check points csv (needs to have columns 'n, 'e', 'z')
 checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
 
-#plot
+#plot error distribution plot?
 errorplotconst=True
+
+#plot map? (false until working correctly)
+mapplotconst=False
 
 #=======================PARSE ARGUMENTS======================
 descriptionstr = ('  Script to validate DEMs using check points from csv file')
@@ -65,6 +70,13 @@ if args.errorplot is not None:
 else:
     #use errorplotconst from top of script
     errorplot = errorplotconst
+    
+if args.mapplot is not None:
+    #Then use command line argument
+    mapplot = args.mapplot
+else:
+    #use errorplotconst from top of script
+    mapplot = mapplotconst
 
 
 ########################################
@@ -130,7 +142,7 @@ if errorplot:
     #Then plot histogram
     #set seaborn style
     sns.set_style('darkgrid')
-    f = plt.figure(figsize=(7.5,5))
+    fig_hist = plt.figure(figsize=(7.5,5))
     
     ax =sns.distplot(df['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
     #set xlimit to be equal on either side of zero
@@ -149,7 +161,17 @@ if errorplot:
     ax.set_xlabel('Elevation difference, GPS - DEM [m]')
     ax.set_ylabel('count [n]')
     
-    f.suptitle('DEM Validation', fontstyle='italic')
+    fig_hist.suptitle('DEM Validation', fontstyle='italic')
+    
+#Plot map?  (map figure not working)
+if mapplot:
+    #Then plot map
+    ls = LightSource(azdeg=315,altdeg=45)
+    fig_map = plt.figure(figsize=(9,9))
+    plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
+    
+    #plot points, using img coords, colors as abs(resid)
+    plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
 
 
 
