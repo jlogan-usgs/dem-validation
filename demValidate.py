@@ -183,6 +183,9 @@ if mapplot:
     plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
     
     #need to try to fix map ticks?  https://snorfalorpagus.net/blog/2014/06/26/using-cartopy-with-rasterio/
+    
+    #get crs from raster dataset
+    ccrs.epsg(dataset.crs.to_dict()['init'].replace('epsg:',''))
 
 
 
