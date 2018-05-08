@@ -10,6 +10,8 @@ import rasterio
 import numpy as np
 import pandas as pd
 from scipy import ndimage
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 #path to DEM (has to be geotiff)
 demfile = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm.tif'
@@ -62,13 +64,41 @@ df['resid'] = df['gps_z'] - df['dem_z']
 
 #RMSE
 rmse = ((df['gps_z'] - df['dem_z']) ** 2).mean() ** .5
+mean_error = df['resid'].mean()
+mae = df['resid'].abs().mean()
+stdev = df['resid'].std()
+
 
 #print results
-print('Mean offset: ' + str(df['resid'].mean()))
-print('Std. Dev.: ' + str(df['resid'].std()))
-print('MAE: ' + str(df['resid'].abs().mean()))
 print('RMSE: ' + str(rmse))
+print('Mean offset: ' + str(mean_error))
+print('Std. Dev.: ' + str(stdev))
+print('MAE: ' + str(mae))
 
+
+#Make histogram
+#set seaborn style
+sns.set_style('darkgrid')
+f = plt.figure(figsize=(7.5,5))
+
+ax =sns.distplot(df['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
+#set xlimit to be equal on either side of zero
+ax.set_xlim(np.abs(np.array(ax.get_xlim())).max()*-1, np.abs(np.array(ax.get_xlim())).max())
+#plot vertical line at 0
+ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
+
+#make annotation str
+s = ('RMSE: ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
+      'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
+      'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
+      'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm')
+#place text at 40% on right, 80% top
+ax.text(np.abs(np.array(ax.get_xlim())).max()*0.4, np.array(ax.get_ylim()).max()*0.8, s, alpha=0.8, fontsize=10)
+
+ax.set_xlabel('Elevation difference, GPS - DEM [m]')
+ax.set_ylabel('count [n]')
+
+f.suptitle('DEM Validation', fontstyle='italic')
 
 
 
