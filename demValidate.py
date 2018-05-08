@@ -12,34 +12,41 @@ import pandas as pd
 from scipy import ndimage
 import argparse
 
+import cartopy.crs as ccrs
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
 
 #Define input files here or in command line.  Command line arguments are used if both provided
 #path to DEM (has to be geotiff)
-demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm.tif'
+#demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm.tif'
+demfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD_UAS-SfM-DEM_10cm.tif"
 
 #path to check points csv (needs to have columns 'n, 'e', 'z')
-checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
+#checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
+checkfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpackTopoValidation.csv"
 
-#plot error distribution plot?
+#path to output csv file
+outfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpackTopoValidation_DEM_Z.csv"
+
+#plot error distribution plot? [default = True]
 errorplotconst=True
 
-#plot map? (false until working correctly)
-mapplotconst=False
+#plot map? [default = False]
+mapplotconst=True
 
 #=======================PARSE ARGUMENTS======================
 descriptionstr = ('  Script to validate DEMs using check points from csv file')
 parser = argparse.ArgumentParser(description=descriptionstr, 
-                                 epilog='example: demValidate.py -dem mygeotiff.tif -checkpointfile mycheckpointfile.csv -plot=True -map=True')
+                                 epilog='example: demValidate.py -dem mygeotiff.tif -checkpointfile mycheckpointfile.csv -plot -map=False')
 parser.add_argument('-dem', '--dem', dest='demfile', nargs='?', const='undefined', type=str, 
                     help='DEM geotiff')
 parser.add_argument('-checkpoints','--checkpointfile', dest='checkfile', nargs='?', const='undefined', type=str, 
                     help='Comma delimited text file with check points, needs header with n, e, z')
 parser.add_argument('-plot','--errorplot', dest='errorplot', nargs='?', const=True, type=bool, 
                     help='Plot error distribution plot [boolean]')
-parser.add_argument('-map','--mapplot', dest='mapplot', nargs='?', const=True, type=bool, 
+parser.add_argument('-map','--mapplot', dest='mapplot', nargs='?', const=False, type=bool, 
                     help='Show plot of hillshade with check points [boolean]')
 args = parser.parse_args()
 
@@ -140,6 +147,7 @@ print('MAE: ' + '{:0.3f}'.format(mae))
 #Plot histogram?
 if errorplot:
     #Then plot histogram
+    print('Plotting error distribution plot')
     #set seaborn style
     sns.set_style('darkgrid')
     fig_hist = plt.figure(figsize=(7.5,5))
@@ -163,15 +171,18 @@ if errorplot:
     
     fig_hist.suptitle('DEM Validation', fontstyle='italic')
     
-#Plot map?  (map figure not working)
+#Plot map?
 if mapplot:
-    #Then plot map
+    #Then plot map (hillshade)
+    print('Plotting map')
     ls = LightSource(azdeg=315,altdeg=45)
     fig_map = plt.figure(figsize=(9,9))
     plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
     
     #plot points, using img coords, colors as abs(resid)
     plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
+    
+    #need to try to fix map ticks?  https://snorfalorpagus.net/blog/2014/06/26/using-cartopy-with-rasterio/
 
 
 
