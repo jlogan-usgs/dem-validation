@@ -170,7 +170,7 @@ if errorplot:
     
     ax =sns.distplot(df['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
     #set xlimit to be equal on either side of zero
-    #ax.set_xlim(np.abs(np.array(ax.get_xlim())).max()*-1, np.abs(np.array(ax.get_xlim())).max())
+    ax.set_xlim(np.abs(np.array(ax.get_xlim())).max()*-1, np.abs(np.array(ax.get_xlim())).max())
     #plot vertical line at 0
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
     
@@ -179,7 +179,7 @@ if errorplot:
           'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
           'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
           'MAE: ' + "{:0.3f}".format(mae) + 'm'  + '\n' +
-          'n = ' + len(df))
+          'n = ' + str(len(df)))
     #place text at 40% on right, 80% top
     ax.text(np.abs(np.array(ax.get_xlim())).max()*0.4, np.array(ax.get_ylim()).max()*0.8, s, alpha=0.8, fontsize=10)
     
