@@ -175,11 +175,11 @@ if errorplot:
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
     
     #make annotation str
-    s = ('RMSE: ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
-          'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
-          'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
-          'MAE: ' + "{:0.3f}".format(mae) + 'm'  + '\n' +
-          'n = ' + str(len(df)))
+    s = ('RMSE:                   ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
+         'Mean Error:          ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
+         'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
+         'MAE:                     ' + "{:0.3f}".format(mae) + 'm'  + '\n' +
+         'n:                           ' + str(len(df)))
     #place text at 40% on right, 80% top
     ax.text(np.abs(np.array(ax.get_xlim())).max()*0.4, np.array(ax.get_ylim()).max()*0.8, s, alpha=0.8, fontsize=10)
     
