@@ -25,7 +25,7 @@ demfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\products\\DEM\\D
 #path to check points csv (needs to have columns 'n, 'e', 'z')
 #checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
 #checkfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpackTopoValidation.csv"
-checkfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\validation\\bb17_topo4bathy_geoid12b.csv"
+checkfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\validation\\bb17_topo4bathy_geoid12b_clipped_to_DEMExtent_codeBBSM.csv"
 
 #path to output csv file
 outfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\validation\\bb17_topo4bathy_geoid12b_UASDEM_Z.csv"
@@ -168,7 +168,7 @@ if errorplot:
     
     ax =sns.distplot(df['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
     #set xlimit to be equal on either side of zero
-    ax.set_xlim(np.abs(np.array(ax.get_xlim())).max()*-1, np.abs(np.array(ax.get_xlim())).max())
+    #ax.set_xlim(np.abs(np.array(ax.get_xlim())).max()*-1, np.abs(np.array(ax.get_xlim())).max())
     #plot vertical line at 0
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
     
@@ -176,7 +176,7 @@ if errorplot:
     s = ('RMSE: ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
           'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
           'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
-          'Mean Error: ' + "{:0.3f}".format(mean_error) + 'm')
+          'MAE: ' + "{:0.3f}".format(mae) + 'm')
     #place text at 40% on right, 80% top
     ax.text(np.abs(np.array(ax.get_xlim())).max()*0.4, np.array(ax.get_ylim()).max()*0.8, s, alpha=0.8, fontsize=10)
     
