@@ -1,8 +1,8 @@
 # DEM validation
 
-Script to validate DEM using check points (usually collected with RTK GPS, or other survey methods).  Script only evaluates vertical differences between check points and DEM.
+Script to validate DEM using check points (usually collected with RTK GPS, or other survey methods).  The script evaluates vertical differences between check points and DEM.  Scipy `ndimage.map_coordinates` is used to do a bilinear interpolation of DEM z values for each checkpoint.  RMSE and other statistics are calculated, and an error distribution plot and map showing checkpoints on a hillshade of the DEM are optionally created.
 
-#### Files
+#### Files in repository
 
 - demValidate.py:  Main python script.
 - demValidate.ipynb: Jupyter notebook for testing.
