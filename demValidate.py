@@ -1,7 +1,7 @@
 """
 Created on Tue May  1 14:48:07 2018
 
-Initial script to do simple DEM validation
+Script to do simple DEM validation using bilinear interplation of DEM z values at check point locations.
 
 @author: jlogan
 """
