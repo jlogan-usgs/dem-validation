@@ -19,18 +19,12 @@ from matplotlib.colors import LightSource
 #Define input files here or in command line.  Command line arguments are used if both provided
 #path to DEM (has to be geotiff)
 demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm.tif'
-#demfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD_UAS-SfM-DEM_10cm.tif"
-#demfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\products\\DEM\\DSM_unclassified\\2017-08-08-BensonUAS_DSM_10cm_clip.tif"
 
 #path to check points csv (needs to have columns 'n, 'e', 'z')
 checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
-#checkfileconst = "C:\\jlogan_python\\demValidation\\data\\2017-1101-LPD-UAS_backpackTopoValidation.csv"
-#checkfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\validation\\bb17_topo4bathy_geoid12b_clipped_to_DEMExtent_codeBBSM.csv"
 
 #path to output csv file
 outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
-#outfileconst = "D:\\UAS\\2017-08-OuterCoast\\2017-08-08-Benson\\validation\\bb17_topo4bathy_geoid12b_UASDEM_Z.csv"
-
 
 #plot error distribution plot? [default = True]
 errorplotconst=True
@@ -145,7 +139,7 @@ df = df.loc[df['dem_z'] != -9999]
 #calculate residual (obs - pred), or (check-dem)
 df['resid'] = df['gps_z'] - df['dem_z']
 
-#RMSE
+#Calc RMSE, mean, mae, stdev
 rmse = ((df['gps_z'] - df['dem_z']) ** 2).mean() ** .5
 mean_error = df['resid'].mean()
 mae = df['resid'].abs().mean()
