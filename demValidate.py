@@ -42,9 +42,9 @@ parser.add_argument('-checkpoints','--checkpointfile', dest='checkfile', nargs='
                     help='Comma delimited text file with check points, needs header with n, e, z')
 parser.add_argument('-outcsv','--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str, 
                     help='Output comma delimited text file with interpolated DEM values')
-parser.add_argument('-plot','--errorplot', dest='errorplot', nargs='?', const=True, type=bool, 
+parser.add_argument('-errorplot','--errorplot', dest='errorplot', nargs='?', const=True, type=bool, 
                     help='Plot error distribution plot [boolean]')
-parser.add_argument('-map','--mapplot', dest='mapplot', nargs='?', const=False, type=bool, 
+parser.add_argument('-mapplot','--mapplot', dest='mapplot', nargs='?', const=False, type=bool, 
                     help='Show plot of hillshade with check points [boolean]')
 args = parser.parse_args()
 
@@ -85,6 +85,7 @@ if args.errorplot is not None:
 else:
     #use errorplotconst from top of script
     errorplot = errorplotconst
+print('Plot error distribution plot = ' + str(errorplot))
     
 if args.mapplot is not None:
     #Then use command line argument
@@ -92,6 +93,7 @@ if args.mapplot is not None:
 else:
     #use errorplotconst from top of script
     mapplot = mapplotconst
+print('Plot map = ' + str(mapplot))
 
 
 ########################################
@@ -181,17 +183,21 @@ if errorplot:
     ax.set_ylabel('count [n]')
     
     fig_hist.suptitle('DEM Validation', fontstyle='italic')
+    plt.show()
     
 #Plot map?
 if mapplot:
     #Then plot map (hillshade)
     print('Plotting map')
+    #reset seaborn
+    sns.reset_orig()
     ls = LightSource(azdeg=315,altdeg=45)
     fig_map = plt.figure(figsize=(9,9))
     plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
     
     #plot points, using img coords, colors as abs(resid)
     plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(),cmap=plt.cm.jet, s=12,alpha=0.5)
+    plt.show()
     
     
 
