@@ -47,20 +47,12 @@ mapplotconst=False
 Requires the following python packages:
 
 - rasterio 
-
 - numpy
-
 - pandas
-
 - scipy
-
 - argparse
-
 - seaborn
-
 - matplotlib
-
-  ​
 
 #### Future improvements
 
