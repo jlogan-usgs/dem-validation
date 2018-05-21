@@ -14,9 +14,15 @@ from scipy import ndimage
 
 class dem(object):
     def __init__(self, demfile):
-        self.dataset = rasterio.open(demfile)
-        self.array = self.dataset.read(1)[self.dataset.read(1) == self.dataset.nodatavals] = np.nan
-        
+        with rasterio.open(demfile) as src:
+            self.dataset = src
+            self.bounds = self.dataset.bounds
+            self.nodatavals = self.dataset.nodatavals
+            self.crs = self.dataset.crs
+            
+            self.array = self.dataset.read(1)
+            self.array[self.array == self.dataset.nodatavals] = np.nan
+                
         
     def validate(self, checkfile):
         # get affine transform
@@ -33,7 +39,7 @@ class dem(object):
         # use map_coordinates to do bilinear interp and place result in new df column
         # need to transpose to get into rows to place into df
         df['dem_z'] = np.transpose(
-            ndimage.map_coordinates(dem, [[df['demrow']], [df['demcol']]], order=1, mode='constant', cval=-9999))
+            ndimage.map_coordinates(self.array, [[df['demrow']], [df['demcol']]], order=1, mode='constant', cval=-9999))
         
         # drop rows which are nan
         df.dropna(axis=0, subset=['dem_z'], inplace=True)
