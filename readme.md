@@ -7,7 +7,9 @@ Script to validate DEM using check points (usually collected with RTK GPS, or ot
 #### Files in repository
 
 - demValidate.py:  Main python script.
-- demValidate_initial_tests.ipynb: Jupyter notebook for initial testing.
+- demValidate_function_demo.ipynb: notebook showing use of DEM validation functions.
+- demValidate_initial_tests.ipynb: notebook for initial testing.
+- demClass.py: class for DEM and validation.  Not used by demValidation.py
 
 #### Usage
 
