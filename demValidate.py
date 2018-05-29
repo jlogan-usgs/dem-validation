@@ -1,7 +1,28 @@
 """
 Created on Tue May  1 14:48:07 2018
 
-Script to do simple DEM validation using bilinear interplation of DEM z values at check point locations.
+Script to do DEM validation using bilinear interplation of DEM z values at check point locations.
+Script can be called from command line, or functions can be imported to other scripts.
+
+example usage:
+    from command line:
+        >> run demValidate.py -dem 'D:\myDEM.tif' -checkpoints  'D:\myCheckpointfile_nez.csv'
+                -outcsv 'D:\myOutputfile.csv' -mapplot=True
+
+    import in another script:
+        #update path to allow import
+        import sys
+        sys.path.append('C:\path_to_directory_with_script')
+        from demValidate import *
+
+        # run dem_validation
+        valstats, valdf, dem, aff = dem_validate(demfile, checkfile, outfile)
+
+        # error distribution plot
+        fig_hist = plot_error_dist(valdf)
+
+        # map plot
+        fig_map = plot_map(dem, aff, valdf)
 
 @author: jlogan
 """
@@ -16,165 +37,139 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
 
-# Define input files here or in command line.  Command line arguments are used if both provided
+# ================ DEFINE INPUT FILES HERE OR IN COMMAND LINE ======================
+# (Command line arguments are used preferentially)
 # path to DEM (has to be geotiff)
-demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm.tif'
-
-# path to check points csv (needs to have columns 'n, 'e', 'z')
+demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm_clip.tif'
+# path to check points csv (must have columns 'n, 'e', 'z')
 checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
-
 # path to output csv file
 outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
-
 # plot error distribution plot? [default = True]
 errorplotconst = True
-
 # plot map? [default = False]
 mapplotconst = False
 
-# =======================PARSE ARGUMENTS======================
-descriptionstr = ('  Script to validate DEMs using check points from csv file')
-parser = argparse.ArgumentParser(description=descriptionstr,
-                                 epilog='example: demValidate.py -dem mygeotiff.tif -checkpointfile mycheckpointfile.csv -plot -map=False')
-parser.add_argument('-dem', '--dem', dest='demfile', nargs='?', const='undefined', type=str,
-                    help='DEM geotiff')
-parser.add_argument('-checkpoints', '--checkpointfile', dest='checkfile', nargs='?', const='undefined', type=str,
-                    help='Comma delimited text file with check points, needs header with n, e, z')
-parser.add_argument('-outcsv', '--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str,
-                    help='Output comma delimited text file with interpolated DEM values')
-parser.add_argument('-errorplot', '--errorplot', dest='errorplot', nargs='?', const=True, type=bool,
-                    help='Plot error distribution plot [boolean]')
-parser.add_argument('-mapplot', '--mapplot', dest='mapplot', nargs='?', const=False, type=bool,
-                    help='Show plot of hillshade with check points [boolean]')
-args = parser.parse_args()
 
-# check arguments
-if args.demfile is not None:
-    # Then use command line argument
-    demfile = args.demfile
-    # remove quotes in string if supplied
-    demfile = demfile.replace('"', '').replace("'", '')
-else:
-    # use demfilefileconst from top of script
-    demfile = demfileconst
-print('Input DEM: ' + demfile)
+# ================ DEFINE INPUT FILES HERE OR IN COMMAND LINE ======================
 
-if args.checkfile is not None:
-    # Then use command line argument
-    checkfile = args.checkfile
-    # remove quotes in string if supplied
-    checkfile = checkfile.replace('"', '').replace("'", '')
-else:
-    # use demfilefileconst from top of script
-    checkfile = checkfileconst
-print('Input check point file: ' + checkfile)
+def dem_validate(demfile, checkfile, outfile):
+    """
+    Function to validate dem using a csv file with check points.  Performs bilinear interpolation on dem at each
+    checkpoint using  scipy.ndimage.map_coordinates.  Only vertical residuals are calculated.
+    Dem file should be geotiff format. Checkpoint file must have columns named
+    'n','e', and 'z' (y coordinate, x coordinate, and z coordinate).
 
-if args.outfile is not None:
-    # Then use command line argument
-    outfile = args.outfile
-    # remove quotes in string if supplied
-    outfile = outfile.replace('"', '').replace("'", '')
-else:
-    # use outfileconst from top of script
-    outfile = outfileconst
-print('Output csv file: ' + outfile)
+    args:
+        demfile: path to geotiff dem (single band only)
+        checkfile: csv file 'n','e', and 'z' columns (with header)
+        outfile: path to output csv file (input checkfile, plus dem value at each point)
 
-if args.errorplot is not None:
-    # Then use command line argument
-    errorplot = args.errorplot
-else:
-    # use errorplotconst from top of script
-    errorplot = errorplotconst
-print('Plot error distribution plot = ' + str(errorplot))
+    returns:
+        valstats: dictionary with rmse, mean_offset, std_dev, mean_abs_error
+        valdf: dataframe with input checkpoints, and dem value at each point
+        dem: numpy array of dem (for use in plot_map function)
+        aff: affine transform (for use in plot_map function)
+    """
 
-if args.mapplot is not None:
-    # Then use command line argument
-    mapplot = args.mapplot
-else:
-    # use errorplotconst from top of script
-    mapplot = mapplotconst
-print('Plot map = ' + str(mapplot))
+    # load DEM (geotiff)
+    dataset = rasterio.open(demfile)
 
-########################################
-# Main script below
+    # get numpy array
+    dem = dataset.read(1)
 
-# load DEM (geotiff)
-dataset = rasterio.open(demfile)
+    # convert nodatavalues to nans
+    dem[dem == dataset.nodatavals] = np.nan
 
-# get numpy array
-dem = dataset.read(1)
+    # #### How to use affine transform, from https://www.perrygeo.com/python-affine-transforms.html
+    # #### Using rasterio and affine
+    # `a = ds.affine`
+    # #### col, row to x, y
+    # `x, y = a * (col, row)`
+    # #### x, y to col, row
+    # `col, row = ~a * (x, y)`
 
-# convert nodatavalues to nans
-dem[dem == dataset.nodatavals] = np.nan
+    # get affine transform
+    aff = dataset.affine
 
-# #### How to use affine transform, from https://www.perrygeo.com/python-affine-transforms.html
-# #### Using rasterio and affine
-# `a = ds.affine`
-# #### col, row to x, y
-# `x, y = a * (col, row)`
-# #### x, y to col, row
-# `col, row = ~a * (x, y)`
+    # load check points into dataframe
+    valdf = pd.read_csv(checkfile)
+    # rename z column to distinguish from dem
+    valdf.rename(columns={'z': 'gps_z'}, inplace=True)
 
-# get affine transform
-a = dataset.affine
+    # use affine to get DEM row, column into df
+    valdf['demcol'], valdf['demrow'] = ~aff * (valdf['e'], valdf['n'])
 
-# load check points into dataframe
-df = pd.read_csv(checkfile)
-# rename z column to distinguish from dem
-df.rename(columns={'z': 'gps_z'}, inplace=True)
+    # use map_coordinates to do bilinear interp and place result in new df column
+    # need to transpose to get into rows to place into df
+    valdf['dem_z'] = np.transpose(
+        ndimage.map_coordinates(dem, [[valdf['demrow']], [valdf['demcol']]], order=1, mode='constant', cval=-9999))
 
-# use affine to get DEM row, column into df
-df['demcol'], df['demrow'] = ~a * (df['e'], df['n'])
+    # drop rows which are nan
+    valdf.dropna(axis=0, subset=['dem_z'], inplace=True)
 
-# use map_coordinates to do bilinear interp and place result in new df column
-# need to transpose to get into rows to place into df
-df['dem_z'] = np.transpose(
-    ndimage.map_coordinates(dem, [[df['demrow']], [df['demcol']]], order=1, mode='constant', cval=-9999))
+    # drop rows which were assigned constant -9999 (outside of dem bounds)
+    valdf = valdf.loc[valdf['dem_z'] != -9999]
 
-# drop rows which are nan
-df.dropna(axis=0, subset=['dem_z'], inplace=True)
+    # calculate residual (obs - pred), or (check-dem)
+    valdf['resid'] = valdf['gps_z'] - valdf['dem_z']
 
-# drop rows which were assigned constant -9999 (outside of dem bounds)
-df = df.loc[df['dem_z'] != -9999]
+    # Calc RMSE, mean, mae, stdev
+    rmse = ((valdf['gps_z'] - valdf['dem_z']) ** 2).mean() ** .5
+    mean_error = valdf['resid'].mean()
+    mae = valdf['resid'].abs().mean()
+    stdev = valdf['resid'].std()
 
-# calculate residual (obs - pred), or (check-dem)
-df['resid'] = df['gps_z'] - df['dem_z']
+    # print results
+    print('RMSE: ' + '{:0.3f}'.format(rmse))
+    print('Mean offset: ' + '{:0.3f}'.format(mean_error))
+    print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
+    print('MAE: ' + '{:0.3f}'.format(mae))
 
-# Calc RMSE, mean, mae, stdev
-rmse = ((df['gps_z'] - df['dem_z']) ** 2).mean() ** .5
-mean_error = df['resid'].mean()
-mae = df['resid'].abs().mean()
-stdev = df['resid'].std()
+    # make a dict to store validation stats
+    valstats = {'rmse': rmse, 'mean': mean_error, 'stdev': stdev, 'mae': mae}
 
-# print results
-print('RMSE: ' + '{:0.3f}'.format(rmse))
-print('Mean offset: ' + '{:0.3f}'.format(mean_error))
-print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
-print('MAE: ' + '{:0.3f}'.format(mae))
+    # export dataframe to csv
+    valdf.drop(['demrow', 'demcol'], axis=1).to_csv(outfile, index=False, float_format='%0.3f')
 
-# export
-df.drop(['demrow', 'demcol'], axis=1).to_csv(outfile, index=False, float_format='%0.3f')
+    # return dem and affine for use in map_plot if needed, otherwise just use "_" for these var in function call
+    return valstats, valdf, dem, aff
 
-# Plot histogram?
-if errorplot:
-    # Then plot histogram
-    print('Plotting error distribution plot')
+
+def plot_error_dist(valdf):
+    """
+    Function to plot distribution of residuals from dem validation.
+
+    args:
+        valdf: dataframe with gps_z, dem_z, and residual at each checkpoint.  Created by dem_validation function.
+
+    returns:
+        fig_hist: handle on plot object
+    """
+
     # set seaborn style
     sns.set_style('darkgrid')
     fig_hist = plt.figure(figsize=(7.5, 5))
 
-    ax = sns.distplot(df['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
+    ax = sns.distplot(valdf['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
     # set xlimit to be equal on either side of zero
     ax.set_xlim(np.abs(np.array(ax.get_xlim())).max() * -1, np.abs(np.array(ax.get_xlim())).max())
     # plot vertical line at 0
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
+
+    # Calc RMSE, mean, mae, stdev from resid for plot annotation (these were already calculated in dem_validate function
+    # but recalculating here to reduce dependency
+    rmse = ((valdf['gps_z'] - valdf['dem_z']) ** 2).mean() ** .5
+    mean_error = valdf['resid'].mean()
+    mae = valdf['resid'].abs().mean()
+    stdev = valdf['resid'].std()
 
     # make annotation str
     s = ('RMSE:                   ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
          'Mean Error:          ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
          'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
          'MAE:                     ' + "{:0.3f}".format(mae) + 'm' + '\n' +
-         'n:                           ' + str(len(df)))
+         'n:                           ' + str(len(valdf)))
     # place text at 40% on right, 80% top
     ax.text(np.abs(np.array(ax.get_xlim())).max() * 0.4, np.array(ax.get_ylim()).max() * 0.8, s, alpha=0.8, fontsize=10)
 
@@ -184,10 +179,20 @@ if errorplot:
     fig_hist.suptitle('DEM Validation', fontstyle='italic')
     plt.show()
 
-# Plot map?
-if mapplot:
-    # Then plot map (hillshade)
-    print('Plotting map')
+    return fig_hist
+
+
+def plot_map(dem, valdf):
+    """
+    Function to plot hillshade map of dem and checkpoints colored by residual.
+
+    args:
+        dem: numpy array of dem. Returned by dem_validation function.
+        valdf: dataframe with gps_z, dem_z, and residual at each checkpoint.  Returned by dem_validation function.
+
+    returns:
+        fig_map: handle on plot object
+    """
     # reset seaborn
     sns.reset_orig()
     ls = LightSource(azdeg=315, altdeg=45)
@@ -195,5 +200,99 @@ if mapplot:
     plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
 
     # plot points, using img coords, colors as abs(resid)
-    plt.scatter(x=df['demcol'], y=df['demrow'], c=df['resid'].abs(), cmap=plt.cm.jet, s=12, alpha=0.5)
+    plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'].abs(), cmap=plt.cm.jet, s=12, alpha=0.5)
     plt.show()
+
+    return fig_map
+
+
+def parse_cl_args():
+    """ Parse arguments from command line"""
+    # =======================PARSE ARGUMENTS======================
+    descriptionstr = '  Script to validate DEMs using check points from csv file'
+    parser = argparse.ArgumentParser(description=descriptionstr,
+                                     epilog='example: demValidate.py -dem mygeotiff.tif '
+                                            '-checkpointfile mycheckpointfile.csv -plot -map=False')
+    parser.add_argument('-dem', '--dem', dest='demfile', nargs='?', const='undefined', type=str,
+                        help='DEM geotiff')
+    parser.add_argument('-checkpoints', '--checkpointfile', dest='checkfile', nargs='?', const='undefined', type=str,
+                        help='Comma delimited text file with check points, needs header with n, e, z')
+    parser.add_argument('-outcsv', '--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str,
+                        help='Output comma delimited text file with interpolated DEM values')
+    parser.add_argument('-errorplot', '--errorplot', dest='errorplot', nargs='?', const=True, type=bool,
+                        help='Plot error distribution plot [boolean]')
+    parser.add_argument('-mapplot', '--mapplot', dest='mapplot', nargs='?', const=False, type=bool,
+                        help='Show plot of hillshade with check points [boolean]')
+    args = parser.parse_args()
+
+    # check arguments
+    if args.demfile is not None:
+        # Then use command line argument
+        demfile = args.demfile
+        # remove quotes in string if supplied
+        demfile = demfile.replace('"', '').replace("'", '')
+    else:
+        # use demfilefileconst from top of script
+        demfile = demfileconst
+    print('Input DEM: ' + demfile)
+
+    if args.checkfile is not None:
+        # Then use command line argument
+        checkfile = args.checkfile
+        # remove quotes in string if supplied
+        checkfile = checkfile.replace('"', '').replace("'", '')
+    else:
+        # use demfilefileconst from top of script
+        checkfile = checkfileconst
+    print('Input check point file: ' + checkfile)
+
+    if args.outfile is not None:
+        # Then use command line argument
+        outfile = args.outfile
+        # remove quotes in string if supplied
+        outfile = outfile.replace('"', '').replace("'", '')
+    else:
+        # use outfileconst from top of script
+        outfile = outfileconst
+    print('Output csv file: ' + outfile)
+
+    if args.errorplot is not None:
+        # Then use command line argument
+        errorplot = args.errorplot
+    else:
+        # use errorplotconst from top of script
+        errorplot = errorplotconst
+    print('Plot error distribution plot = ' + str(errorplot))
+
+    if args.mapplot is not None:
+        # Then use command line argument
+        mapplot = args.mapplot
+    else:
+        # use errorplotconst from top of script
+        mapplot = mapplotconst
+    print('Plot map = ' + str(mapplot))
+
+    return demfile, checkfile, outfile, errorplot, mapplot
+
+
+def main():
+    """ Operations if demValidate called directly as script. """
+    # if called directly as script then
+    # get command line arguments
+    demfile, checkfile, outfile, errorplot, mapplot = parse_cl_args()
+
+    # run dem validation
+    valstats, df, dem, aff = dem_validate(demfile, checkfile, outfile)
+
+    # error distribution plot?
+    if errorplot:
+        fig_hist = plot_error_dist(df)
+
+    # map plot?
+    if mapplot:
+        fig_map = plot_map(dem, df)
+
+
+if __name__ == '__main__':
+    # if called directly as script, execute main.
+    main()
