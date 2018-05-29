@@ -2,9 +2,9 @@
 """
 Created on Sat May 19 22:21:13 2018
 
-Create a class for DEMs
+Create a class for DEM and DEM validation.  Prefer functions in demValidate.py
 
-@author: Josh
+@author: jlogan
 """
 
 import rasterio
