@@ -16,7 +16,7 @@ Script to validate DEM using check points (usually collected with RTK GPS, or ot
 1. Can be run directly from the python console with command line arguments:
 
     ```
-	run demValidate.py -dem 'D:\myDEM.tif' -checkpoints  			'D:\myCheckpointfile_nez.csv' -outcsv 'D:\myOutputfile.csv' -mapplot=True
+	run demValidate.py -dem 'D:\myDEM.tif' -checkpoints 'D:\myCheckpointfile_nez.csv' -outcsv 'D:\myOutputfile.csv' -mapplot=True
     ```
 2. Alternatively can be run from python IDE, in which case the constants in the script are used instead of the command line arguments:
 
