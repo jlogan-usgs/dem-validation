@@ -53,17 +53,22 @@ mapplotconst = False
 
 # ================ DEFINE INPUT FILES HERE OR IN COMMAND LINE ======================
 
-def dem_validate(demfile, checkfile, outfile):
+def dem_validate(demfile, checkfile, outfile, **kwargs):
     """
     Function to validate dem using a csv file with check points.  Performs bilinear interpolation on dem at each
     checkpoint using  scipy.ndimage.map_coordinates.  Only vertical residuals are calculated.
     Dem file should be geotiff format. Checkpoint file must have columns named
-    'n','e', and 'z' (y coordinate, x coordinate, and z coordinate).
+    'n','e', and 'z' (y coordinate, x coordinate, and z coordinate).  Keyword arg
+    one_pt_per_cell=True will remove check points where more than one point falls in a DEM cell.
+    Only the first point in the file will be kept.
 
     args:
         demfile: path to geotiff dem (single band only)
         checkfile: csv file 'n','e', and 'z' columns (with header)
         outfile: path to output csv file (input checkfile, plus dem value at each point)
+    
+    kwargs:
+        one_pt_per_cell: boolean
 
     returns:
         valstats: dictionary with rmse, mean_offset, std_dev, mean_abs_error
@@ -99,7 +104,17 @@ def dem_validate(demfile, checkfile, outfile):
 
     # use affine to get DEM row, column into df
     valdf['demcol'], valdf['demrow'] = ~aff * (valdf['e'], valdf['n'])
-
+    
+    # remove points in cells where number of points in cell > 1, keeping only first point
+    # if 'one_pt_per_cell=True'
+    if kwargs.get('one_pt_per_cell'):
+        print('dropping points where > 1 point per cell')
+        #get integer index of rows, col
+        valdf['demcol_int'] = np.floor(valdf['demcol'])
+        valdf['demrow_int'] = np.floor(valdf['demrow'])
+        valdf.drop_duplicates(['demrow_int','demcol_int'],keep='first', inplace=True)
+        valdf.drop(['demrow_int', 'demcol_int'], axis=1, inplace=True)
+    
     # use map_coordinates to do bilinear interp and place result in new df column
     # need to transpose to get into rows to place into df
     valdf['dem_z'] = np.transpose(
