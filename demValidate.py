@@ -137,6 +137,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     mae = valdf['resid'].abs().mean()
     stdev = valdf['resid'].std()
     max_abs_error = valdf['resid'].abs().max()
+    n = len(valdf)
 
     # print results
     print('RMSE: ' + '{:0.3f}'.format(rmse))
@@ -144,9 +145,10 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
     print('MAE: ' + '{:0.3f}'.format(mae))
     print('Max Abs. Err: ' + '{:0.3f}'.format(max_abs_error))
+    print('n: ' + str(n))
 
     # make a dict to store validation stats
-    valstats = {'rmse': rmse, 'mean': mean_error, 'stdev': stdev, 'mae': mae, 'max_abs_error': max_abs_error}
+    valstats = {'rmse': rmse, 'mean': mean_error, 'stdev': stdev, 'mae': mae, 'max_abs_error': max_abs_error, 'n': n}
 
     # export dataframe to csv
     valdf.drop(['demrow', 'demcol'], axis=1).to_csv(outfile, index=False, float_format='%0.3f')
