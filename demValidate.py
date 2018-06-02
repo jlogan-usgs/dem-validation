@@ -108,12 +108,14 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     # remove points in cells where number of points in cell > 1, keeping only first point
     # if 'one_pt_per_cell=True'
     if kwargs.get('one_pt_per_cell'):
-        print('dropping points where > 1 point per cell')
+        print('Dropping points where > 1 point per cell...')
+        initlen = len(valdf)
         #get integer index of rows, col
         valdf['demcol_int'] = np.floor(valdf['demcol'])
         valdf['demrow_int'] = np.floor(valdf['demrow'])
         valdf.drop_duplicates(['demrow_int','demcol_int'],keep='first', inplace=True)
         valdf.drop(['demrow_int', 'demcol_int'], axis=1, inplace=True)
+        print('Dropped ' + str(initlen - len(valdf)) + ' points where > 1 point per cell.')
     
     # use map_coordinates to do bilinear interp and place result in new df column
     # need to transpose to get into rows to place into df
