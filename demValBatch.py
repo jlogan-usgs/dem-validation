@@ -99,9 +99,9 @@ def custom_plot_map(dem, valdf):
     """
     # reset seaborn
     sns.reset_orig()
-    ls = LightSource(azdeg=315, altdeg=45)
+    ltsrc = LightSource(azdeg=315, altdeg=45)
     fig_map = plt.figure(figsize=(9, 9))
-    plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
+    plt.imshow(ltsrc.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
 
     # plot points, using img coords, colors as resid.mean +- 3 stddev
     #plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'], cmap=plt.cm.jet, s=2, alpha=0.8)
