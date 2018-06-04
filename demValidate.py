@@ -216,9 +216,9 @@ def plot_map(dem, valdf):
     """
     # reset seaborn
     sns.reset_orig()
-    ls = LightSource(azdeg=315, altdeg=45)
+    ltsrc = LightSource(azdeg=315, altdeg=45)
     fig_map = plt.figure(figsize=(9, 9))
-    plt.imshow(ls.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
+    plt.imshow(ltsrc.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
 
     # plot points, using img coords, colors as abs(resid)
     plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'].abs(), cmap=plt.cm.jet, s=12, alpha=0.5)
