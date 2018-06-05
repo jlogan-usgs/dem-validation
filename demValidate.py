@@ -110,9 +110,9 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     if kwargs.get('one_pt_per_cell'):
         print('Dropping points where > 1 point per cell...')
         initlen = len(valdf)
-        #get integer index of rows, col
-        valdf['demcol_int'] = np.floor(valdf['demcol'])
-        valdf['demrow_int'] = np.floor(valdf['demrow'])
+        #get integer index of rows, col (use round instead of floor to group into center of numpy cell (center of pixel))
+        valdf['demcol_int'] = np.round(valdf['demcol'])
+        valdf['demrow_int'] = np.round(valdf['demrow'])
         valdf.drop_duplicates(['demrow_int','demcol_int'],keep='first', inplace=True)
         valdf.drop(['demrow_int', 'demcol_int'], axis=1, inplace=True)
         print('Dropped ' + str(initlen - len(valdf)) + ' points where > 1 point per cell.')
