@@ -20,16 +20,18 @@ from tqdm import tqdm
 
 
 # import DEM val functions
-pathtodemvalscript = 'D:\\jloganPython\\dem-validation'
+pathtodemvalscript = 'D:\\jlogan\\pyScripts\\demval'
 sys.path.append(pathtodemvalscript)
 from demValidate import dem_validate
 
 # set inputs/outputs
-demfiles = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\dems\\*.tif'
-checkcsv = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\val_pts\\2017-0307-OB_ne_elht_NAD83_CORS96.csv'
-outcheckdir = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\results'
-outplotdir = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\results\\plots'
-outmasterresultsfile = 'DEMValMasterResults_no_dup.csv'
+demfiles = 'D:\\aritchie\\OB_clip_dems\\*.tif'
+#checkcsv = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\val_pts\\2017-0307-OB_ne_elht_NAD83_CORS96.csv'
+#use data points thinned to 0.5 meter cells
+checkcsv = 'D:\\aritchie\\validation_pts\\2017-0307-OB_ne_elht_NAD83_CORS96_hlfmeterThinned.csv'
+outcheckdir = 'D:\\aritchie\\ob_results'
+outplotdir = 'D:\\aritchie\\ob_results\\plots\\uniformScale'
+outmasterresultsfile = 'DEMValMasterResults.csv'
 errorplot=True
 mapplot=True
 
@@ -51,12 +53,16 @@ def custom_error_plot(valdf):
     fig_hist = plt.figure(figsize=(7.5, 5))
 
     ax = sns.distplot(valdf['resid'], bins=100, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
-    # set xlimit to be equal on either side of zero
-    # get max xlim first
-    max_xlim = np.abs(np.array(ax.get_xlim())).max()
-    if max_xlim >= 4:
-        max_xlim = 4
-    ax.set_xlim(max_xlim * -1, max_xlim)
+    #ADAPTIVE SCALE
+#    # set xlimit to be equal on either side of zero
+#    # get max xlim first
+#    max_xlim = np.abs(np.array(ax.get_xlim())).max()
+#    if max_xlim >= 4:
+#        max_xlim = 4
+#    ax.set_xlim(max_xlim * -1, max_xlim)
+
+    #UNIFORM SCALE
+    ax.set_xlim(-5, 5)
     # plot vertical line at 0
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
 
@@ -85,7 +91,7 @@ def custom_error_plot(valdf):
     return fig_hist
 
 
-def custom_plot_map(dem, valdf):
+def custom_plot_map(dem, valdf, aff):
     """
     Function to plot hillshade map of dem and checkpoints colored by residual.
     Using custom settings instead of plot_map from demValidate.py
@@ -93,7 +99,8 @@ def custom_plot_map(dem, valdf):
     args:
         dem: numpy array of dem. Returned by dem_validation function.
         valdf: dataframe with gps_z, dem_z, and residual at each checkpoint.  Returned by dem_validation function.
-
+        aff: affine transform for settgin tick labels
+        
     returns:
         fig_map: handle on plot object
     """
@@ -102,17 +109,50 @@ def custom_plot_map(dem, valdf):
     ltsrc = LightSource(azdeg=315, altdeg=45)
     fig_map = plt.figure(figsize=(9, 9))
     plt.imshow(ltsrc.hillshade(dem, vert_exag=1.5, dx=0.1, dy=0.1), cmap='gray')
+    
+    #disable autoscale to fix extent
+    ax = plt.gca()
+    ax.autoscale(enable=False)
+    
+    #pad by 50 meters
+    xl = ax.get_xlim()
+    yl = ax.get_ylim()
+    ax.set_xlim(xl[0] - 50, xl[1] + 50)
+    ax.set_ylim(yl[0] + 50, yl[1] - 50)
+    
 
     # plot points, using img coords, colors as resid.mean +- 3 stddev
-    #plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'], cmap=plt.cm.jet, s=2, alpha=0.8)
+    #ADAPTIVE SCALE (+-3STDEV)
+#    plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'], cmap=plt.cm.jet, 
+#                s=2, alpha=0.5, 
+#                vmin=valdf['resid'].mean()-(3*valdf['resid'].std()), 
+#                vmax=valdf['resid'].mean()+(3*valdf['resid'].std()))
+    
+    #UNIFORM SCALE -3 - +3
     plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'], cmap=plt.cm.jet, 
                 s=2, alpha=0.5, 
-                vmin=valdf['resid'].mean()-(3*valdf['resid'].std()), 
-                vmax=valdf['resid'].mean()+(3*valdf['resid'].std()))
-#    plt.xlim(valdf['demcol'].min(), valdf['demcol'].max())
-#    plt.ylim(valdf['demrow'].min(), valdf['demrow'].max())
+                vmin=-3, 
+                vmax=3)
     
     plt.colorbar(aspect=45, pad=0.04, label='residual [m]')
+    
+    #set ticklabels to easting, northing instead of image coords
+#    el = []
+#    nl = []
+#    for col in ax.get_xticks():
+#        e, n = aff * (col, 0)
+#        el.append(round(e))
+#        
+#    for row in ax.get_yticks():
+#        e, n = aff * (0, row)
+#        nl.append(round(n)) 
+#    ax.set_xticklabels(el)
+#    ax.set_yticklabels(nl)
+#    
+#    #set tick label formats
+#    plt.yticks(fontsize=8, rotation=90)
+#    plt.xticks(fontsize=8)
+    
     plt.show()
 
     return fig_map
@@ -158,7 +198,7 @@ for index, file in enumerate(tqdm(filelist)):
     print(str(index) + '/' + str(len(filelist)) + '. Validating ' + demname)
     
     # run dem_validate, one point per cell
-    valstats, valdf, tmpdem, _ = dem_validate(file, checkcsv, outcheckfile, one_pt_per_cell=True)
+    valstats, valdf, tmpdem, tmpaff = dem_validate(file, checkcsv, outcheckfile)
 
     # load valstats to master dataframe using dict keys to map to columns
     for key, value in valstats.items():
@@ -171,13 +211,13 @@ for index, file in enumerate(tqdm(filelist)):
         # do custom plot to keep x range between -4 and 4
         fig = custom_error_plot(valdf)
         # change title
-        fig.suptitle(basedemname)
+        #fig.suptitle(basedemname)
         fig.savefig((outplotdir + '\\' + basedemname + '_val_plot.png'), dpi=100)
         plt.close(fig)
         
     if mapplot:
         # do custom map with small pts
-        mapfig = custom_plot_map(tmpdem, valdf)
+        mapfig = custom_plot_map(tmpdem, valdf, tmpaff)
         squeeze_fig_aspect(mapfig)
         plt.tight_layout()
         #mapfig.suptitle('GPS - DEM Residual')
