@@ -45,6 +45,8 @@ demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvC
 checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
 # path to output csv file
 outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
+# one point per cell? [default = True]
+oneptpercellconst = True
 # plot error distribution plot? [default = True]
 errorplotconst = True
 # plot map? [default = False]
@@ -60,7 +62,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     Dem file should be geotiff format. Checkpoint file must have columns named
     'n','e', and 'z' (y coordinate, x coordinate, and z coordinate).  Keyword arg
     one_pt_per_cell=True will remove check points where more than one point falls in a DEM cell.
-    Only the first point in the file will be kept.
+    For each pixel only the first point in the file will be kept.
 
     args:
         demfile: path to geotiff dem (single band only)
@@ -268,6 +270,8 @@ def parse_cl_args():
                         help='Comma delimited text file with check points, needs header with n, e, z')
     parser.add_argument('-outcsv', '--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str,
                         help='Output comma delimited text file with interpolated DEM values')
+    parser.add_argument('-one_pt_per_cell', '--one_pt_per_cell', dest='onepointpercell', nargs='?', const=True, type=bool,
+                        help='Plot error distribution plot [boolean]')
     parser.add_argument('-errorplot', '--errorplot', dest='errorplot', nargs='?', const=True, type=bool,
                         help='Plot error distribution plot [boolean]')
     parser.add_argument('-mapplot', '--mapplot', dest='mapplot', nargs='?', const=False, type=bool,
@@ -304,7 +308,15 @@ def parse_cl_args():
         # use outfileconst from top of script
         outfile = outfileconst
     print('Output csv file: ' + outfile)
-
+    
+    if args.onepointpercell is not None:
+        # Then use command line argument
+        onepointpercell = args.errorplot
+    else:
+        # use errorplotconst from top of script
+        onepointpercell = oneptpercellconst
+    print('Point thinning = ' + str(onepointpercell))
+    
     if args.errorplot is not None:
         # Then use command line argument
         errorplot = args.errorplot
@@ -321,17 +333,17 @@ def parse_cl_args():
         mapplot = mapplotconst
     print('Plot map = ' + str(mapplot))
 
-    return demfile, checkfile, outfile, errorplot, mapplot
+    return demfile, checkfile, outfile, onepointpercell, errorplot, mapplot
 
 
 def main():
     """ Operations if demValidate called directly as script. """
     # if called directly as script then
     # get command line arguments
-    demfile, checkfile, outfile, errorplot, mapplot = parse_cl_args()
+    demfile, checkfile, outfile, onepointpercell, errorplot, mapplot = parse_cl_args()
 
     # run dem validation
-    valstats, df, dem, aff = dem_validate(demfile, checkfile, outfile)
+    valstats, df, dem, aff = dem_validate(demfile, checkfile, outfile, one_pt_per_cell=onepointpercell)
 
     # error distribution plot?
     if errorplot:
