@@ -140,12 +140,12 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     n = len(valdf)
 
     # print results
-    print('RMSE: ' + '{:0.3f}'.format(rmse))
-    print('Mean offset: ' + '{:0.3f}'.format(mean_error))
-    print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
-    print('MAE: ' + '{:0.3f}'.format(mae))
-    print('Max Abs. Err: ' + '{:0.3f}'.format(max_abs_error))
-    print('n: ' + str(n))
+#    print('RMSE: ' + '{:0.3f}'.format(rmse))
+#    print('Mean offset: ' + '{:0.3f}'.format(mean_error))
+#    print('Std. Dev.: ' + '{:0.3f}'.format(stdev))
+#    print('MAE: ' + '{:0.3f}'.format(mae))
+#    print('Max Abs. Err: ' + '{:0.3f}'.format(max_abs_error))
+#    print('n: ' + str(n))
 
     # make a dict to store validation stats
     valstats = {'rmse': rmse, 'mean': mean_error, 'stdev': stdev, 'mae': mae, 'max_abs_error': max_abs_error, 'n': n}
