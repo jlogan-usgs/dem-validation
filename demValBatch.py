@@ -25,12 +25,12 @@ sys.path.append(pathtodemvalscript)
 from demValidate import dem_validate
 
 # set inputs/outputs
-demfiles = 'D:\\aritchie\\OB_clip_dems\\*.tif'
+demfiles = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\dems\\*.tif'
 #checkcsv = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\val_pts\\2017-0307-OB_ne_elht_NAD83_CORS96.csv'
 #use data points thinned to 0.5 meter cells
-checkcsv = 'D:\\aritchie\\validation_pts\\2017-0307-OB_ne_elht_NAD83_CORS96_hlfmeterThinned.csv'
-outcheckdir = 'D:\\aritchie\\ob_results'
-outplotdir = 'D:\\aritchie\\ob_results\\plots\\uniformScale'
+checkcsv = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\val_pts\\2017-0307-OB_ne_elht_NAD83_CORS96_hlfmeterThinned_kdtree_test.csv'
+outcheckdir = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\results'
+outplotdir = 'D:\\jloganPython\\dem-validation\\data\\batch\\ob\\results\\plots'
 outmasterresultsfile = 'DEMValMasterResults.csv'
 errorplot=True
 mapplot=True
@@ -134,25 +134,30 @@ def custom_plot_map(dem, valdf, aff):
                 vmin=-3, 
                 vmax=3)
     
-    plt.colorbar(aspect=45, pad=0.04, label='residual [m]')
-    
     #set ticklabels to easting, northing instead of image coords
-#    el = []
-#    nl = []
-#    for col in ax.get_xticks():
-#        e, n = aff * (col, 0)
-#        el.append(round(e))
-#        
-#    for row in ax.get_yticks():
-#        e, n = aff * (0, row)
-#        nl.append(round(n)) 
-#    ax.set_xticklabels(el)
-#    ax.set_yticklabels(nl)
-#    
-#    #set tick label formats
-#    plt.yticks(fontsize=8, rotation=90)
-#    plt.xticks(fontsize=8)
+    el = []
+    nl = []
+    for col in ax.get_xticks():
+        e, _ = aff * (col, 0)
+        el.append(int(round(e)))
+        
+    for row in ax.get_yticks():
+        _, n = aff * (0, row)
+        nl.append(int(round(n))) 
     
+    #set top y ticklabel to ''
+    nl[0],nl[1] = '',''
+    ax.set_xticklabels(el)
+    ax.set_yticklabels(nl)
+    
+    #set tick label formats
+    plt.yticks(fontsize=8, rotation=90, verticalalignment='center')
+    plt.xticks(fontsize=8)
+    
+    cbar = plt.colorbar(aspect=45, pad=0.04, label='residual [m]')
+    cbar.set_label('residual [m]',fontsize=8)
+    cbar.ax.tick_params(labelsize=8)
+        
     plt.show()
 
     return fig_map
@@ -221,7 +226,7 @@ for index, file in enumerate(tqdm(filelist)):
         squeeze_fig_aspect(mapfig)
         plt.tight_layout()
         #mapfig.suptitle('GPS - DEM Residual')
-        mapfig.savefig((outplotdir + '\\' + basedemname + '_val_map.png'), dpi=200)
+        mapfig.savefig((outplotdir + '\\' + basedemname + '_val_map.png'), dpi=200, bbox_inches='tight')
         plt.close(mapfig)
 
 # export masterdf to csv
