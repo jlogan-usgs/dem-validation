@@ -203,13 +203,14 @@ def plot_error_dist(valdf):
     return fig_hist
 
 
-def plot_map(dem, valdf):
+def plot_map(dem, valdf, aff):
     """
     Function to plot hillshade map of dem and checkpoints colored by residual.
 
     args:
         dem: numpy array of dem. Returned by dem_validation function.
         valdf: dataframe with gps_z, dem_z, and residual at each checkpoint.  Returned by dem_validation function.
+        aff: affine transformation. Returned by dem_validation function.
 
     returns:
         fig_map: handle on plot object
@@ -222,6 +223,33 @@ def plot_map(dem, valdf):
 
     # plot points, using img coords, colors as abs(resid)
     plt.scatter(x=valdf['demcol'], y=valdf['demrow'], c=valdf['resid'].abs(), cmap=plt.cm.jet, s=12, alpha=0.5)
+    
+    ax = plt.gca()
+    
+    # set ticklabels to easting, northing instead of image coords
+    el = []
+    nl = []
+    for col in ax.get_xticks():
+        e, _ = aff * (col, 0)
+        el.append(int(round(e)))
+        
+    for row in ax.get_yticks():
+        _, n = aff * (0, row)
+        nl.append(int(round(n))) 
+    
+    #set top y ticklabel to ''
+    nl[0],nl[1] = '',''
+    ax.set_xticklabels(el)
+    ax.set_yticklabels(nl)
+    
+    #set tick label formats
+    plt.yticks(fontsize=8, rotation=90, verticalalignment='center')
+    plt.xticks(fontsize=8)
+    
+    cbar = plt.colorbar(aspect=45, pad=0.04, label='residual [m]')
+    cbar.set_label('residual [m]',fontsize=8)
+    cbar.ax.tick_params(labelsize=8)
+    
     plt.show()
 
     return fig_map
@@ -311,7 +339,7 @@ def main():
 
     # map plot?
     if mapplot:
-        fig_map = plot_map(dem, df)
+        fig_map = plot_map(dem, df, aff)
 
 
 if __name__ == '__main__':
