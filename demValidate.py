@@ -137,7 +137,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     rmse = ((valdf['gps_z'] - valdf['dem_z']) ** 2).mean() ** .5
     mean_error = valdf['resid'].mean()
     mae = valdf['resid'].abs().mean()
-    stdev = valdf['resid'].std()
+    stdev = valdf['resid'].std(ddof=0)   #ddof=0 for pop. st.dev. (n)
     max_abs_error = valdf['resid'].abs().max()
     n = len(valdf)
 
