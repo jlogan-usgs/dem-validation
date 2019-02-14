@@ -47,11 +47,6 @@ from matplotlib.colors import LightSource
 # path to output csv file
 #outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
 
-#Molokai UAS
-demfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\Polar_SubaerialGCPs\lastoolcleaned\2018-0624-Molokai_SubAirGCP_LAStoolgrnd_uf_thin20cm_RefrCorrected_50cmgrid_lowest.tif"
-checkfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\shoals_check_pts\mkshls_uascheck.txt"
-outfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\Polar_SubaerialGCPs\lastoolcleaned\2018-0624-Molokai_SubAirGCP_LAStoolgrnd_uf_thin20cm_RefrCorrected_50cmgrid_shlsspotcheck_lowest.csv"
-
 
 # one point per cell? [default = True]
 oneptpercellconst = False
@@ -143,7 +138,11 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         #registration.  (eg. -278.1 -> -279, 1179.9 -> 1179)
         valdf['demcol_int'] = np.floor(valdf['demcol']).astype(int)
         valdf['demrow_int'] = np.floor(valdf['demrow']).astype(int)
-        
+        #remove all rows and columns outside of dem (indices too large)
+        sizerow, sizecol = dem.shape
+        valdf = valdf.loc[(valdf['demrow_int'].abs() <= sizerow-1) & (valdf['demcol_int'].abs() <= sizecol-1)]
+        #sample array and put values in column
+        valdf['dem_z'] = dem[valdf['demrow_int'], valdf['demcol_int']]
 
     # drop rows which are nan
     valdf.dropna(axis=0, subset=['dem_z'], inplace=True)
@@ -294,7 +293,7 @@ def parse_cl_args():
                         help='Output comma delimited text file with interpolated DEM values')
     parser.add_argument('-one_pt_per_cell', '--one_pt_per_cell', dest='onepointpercell', nargs='?', const=True, type=bool,
                         help='Only use one check point per grid cell [boolean]')
-    parser.add_argument('-method', '--method', dest='onepointpercell', nargs='?', const='interpolate', type=str,
+    parser.add_argument('-method', '--method', dest='method', nargs='?', const='interpolate', type=str,
                         help='Method to get cell value: "sample" or "interpolate" [default="interpolate"] [str]')
     parser.add_argument('-errorplot', '--errorplot', dest='errorplot', nargs='?', const=True, type=bool,
                         help='Plot error distribution plot [boolean]')
@@ -365,7 +364,7 @@ def parse_cl_args():
         mapplot = mapplotconst
     print('Plot map = ' + str(mapplot))
 
-    return demfile, checkfile, outfile, onepointpercell, errorplot, mapplot
+    return demfile, checkfile, outfile, onepointpercell, interpmethod, errorplot, mapplot
 
 
 def main():
