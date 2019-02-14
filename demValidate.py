@@ -39,14 +39,22 @@ from matplotlib.colors import LightSource
 
 # ================ DEFINE INPUT FILES HERE OR IN COMMAND LINE ======================
 # (Command line arguments are used preferentially)
+######INPUTS######
 # path to DEM (has to be geotiff)
-demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm_clip.tif'
+#demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm_clip.tif'
 # path to check points csv (must have columns 'n, 'e', 'z')
-checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
+#checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
 # path to output csv file
-outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
+#outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
+
+#Molokai UAS
+demfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\Polar_SubaerialGCPs\lastoolcleaned\2018-0624-Molokai_SubAirGCP_LAStoolgrnd_uf_thin20cm_RefrCorrected_50cmgrid_lowest.tif"
+checkfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\shoals_check_pts\mkshls_uascheck.txt"
+outfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\Polar_SubaerialGCPs\lastoolcleaned\2018-0624-Molokai_SubAirGCP_LAStoolgrnd_uf_thin20cm_RefrCorrected_50cmgrid_shlsspotcheck_lowest.csv"
+
+
 # one point per cell? [default = True]
-oneptpercellconst = True
+oneptpercellconst = False
 # plot error distribution plot? [default = True]
 errorplotconst = True
 # plot map? [default = False]
