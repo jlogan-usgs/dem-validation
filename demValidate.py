@@ -7,7 +7,7 @@ Script can be called from command line, or functions can be imported to other sc
 example usage:
     from command line:
         >> run demValidate.py -dem 'D:\myDEM.tif' -checkpoints  'D:\myCheckpointfile_nez.csv'
-                -outcsv 'D:\myOutputfile.csv' -mapplot=True
+                -outcsv 'D:\myOutputfile.csv' -mapplot=True -method='sample'
 
     import in another script:
         #update path to allow import
@@ -16,7 +16,7 @@ example usage:
         from demValidate import *
 
         # run dem_validation
-        valstats, valdf, dem, aff = dem_validate(demfile, checkfile, outfile)
+        valstats, valdf, dem, aff = dem_validate(demfile, checkfile, outfile, method="sample")
 
         # error distribution plot
         fig_hist = plot_error_dist(valdf)
@@ -41,11 +41,11 @@ from matplotlib.colors import LightSource
 # (Command line arguments are used preferentially)
 ######INPUTS######
 # path to DEM (has to be geotiff)
-#demfileconst = 'D:\\UAS\\2018-605-FA\\products\\DEM\\DEM_GrndClass\\2018-04-ClvCorral_DEM_5cm_clip.tif'
+demfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\eval2\NoPolar_SubAirGCP_CamSubset_Ru10_ManEdit_grnd_depadd_refrCor_10cm.tif"
 # path to check points csv (must have columns 'n, 'e', 'z')
-#checkfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez.csv'
+checkfileconst = r'T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\shoals_check_pts\mkshls_uascheck_xyzp.csv'
 # path to output csv file
-#outfileconst = 'D:\\UAS\\2018-605-FA\\GPS\\2018-04-ClvCorral_RTK_Validation_nez_DEMz.csv'
+outfileconst = r'D:\temp\temp.csv'
 
 
 # one point per cell? [default = True]
@@ -86,6 +86,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         dem: numpy array of dem (for use in plot_map function)
         aff: affine transform (for use in plot_map function)
     """
+    print(f'Interpolation method = {kwargs.get("method")}')
 
     # load DEM (geotiff)
     dataset = rasterio.open(demfile)
@@ -127,7 +128,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         valdf.drop(['demrow_int', 'demcol_int'], axis=1, inplace=True)
         print('Dropped ' + str(initlen - len(valdf)) + ' points where > 1 point per cell.')
     
-    if kwargs.get('method') == 'interpolate':
+    if kwargs.get('method') == 'interpolate' or kwargs.get('method') is None:
         # use map_coordinates to do bilinear interp and place result in new df column
         # need to transpose to get into rows to place into df
         valdf['dem_z'] = np.transpose(
