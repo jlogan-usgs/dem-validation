@@ -59,6 +59,8 @@ oneptpercellconst = False
 errorplotconst = True
 # plot map? [default = False]
 mapplotconst = False
+# Method to get cell value "interpolate" or "sample" [default = interpolate]
+methodconst = 'interpolate'
 
 
 # ================ DEFINE INPUT FILES HERE OR IN COMMAND LINE ======================
@@ -70,7 +72,9 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     Dem file should be geotiff format. Checkpoint file must have columns named
     'n','e', and 'z' (y coordinate, x coordinate, and z coordinate).  Keyword arg
     one_pt_per_cell=True will remove check points where more than one point falls in a DEM cell.
-    For each pixel only the first point in the file will be kept.
+    For each pixel only the first point in the file will be kept. Keyword arg
+    method='interpolate' will use bilinear interpolation to get dem cell value. Keyword arg
+    method='sample' will not perform interpolation (cell value at xy will be used)
 
     args:
         demfile: path to geotiff dem (single band only)
@@ -79,6 +83,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     
     kwargs:
         one_pt_per_cell: boolean
+        method: "interpolate" or "sample"
 
     returns:
         valstats: dictionary with rmse, mean_offset, std_dev, mean_abs_error
@@ -127,10 +132,18 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         valdf.drop(['demrow_int', 'demcol_int'], axis=1, inplace=True)
         print('Dropped ' + str(initlen - len(valdf)) + ' points where > 1 point per cell.')
     
-    # use map_coordinates to do bilinear interp and place result in new df column
-    # need to transpose to get into rows to place into df
-    valdf['dem_z'] = np.transpose(
-        ndimage.map_coordinates(dem, [[valdf['demrow']], [valdf['demcol']]], order=1, mode='constant', cval=-9999))
+    if kwargs.get('method') == 'interpolate':
+        # use map_coordinates to do bilinear interp and place result in new df column
+        # need to transpose to get into rows to place into df
+        valdf['dem_z'] = np.transpose(
+            ndimage.map_coordinates(dem, [[valdf['demrow']], [valdf['demcol']]], order=1, mode='constant', cval=-9999))
+    elif kwargs.get('method') == 'sample':
+        #sample value at pixel
+        #get integer index of rows, col.  Indices need to be floored for proper
+        #registration.  (eg. -278.1 -> -279, 1179.9 -> 1179)
+        valdf['demcol_int'] = np.floor(valdf['demcol']).astype(int)
+        valdf['demrow_int'] = np.floor(valdf['demrow']).astype(int)
+        
 
     # drop rows which are nan
     valdf.dropna(axis=0, subset=['dem_z'], inplace=True)
@@ -271,7 +284,8 @@ def parse_cl_args():
     descriptionstr = '  Script to validate DEMs using check points from csv file'
     parser = argparse.ArgumentParser(description=descriptionstr,
                                      epilog='example: demValidate.py -dem mygeotiff.tif '
-                                            '-checkpointfile mycheckpointfile.csv -plot -map=False')
+                                            '-checkpointfile mycheckpointfile.csv -plot -map=False '
+                                            '-one_pt_per_cell=False -method="interpolate"')
     parser.add_argument('-dem', '--dem', dest='demfile', nargs='?', const='undefined', type=str,
                         help='DEM geotiff')
     parser.add_argument('-checkpoints', '--checkpointfile', dest='checkfile', nargs='?', const='undefined', type=str,
@@ -279,7 +293,9 @@ def parse_cl_args():
     parser.add_argument('-outcsv', '--outcsvfile', dest='outfile', nargs='?', const='undefined', type=str,
                         help='Output comma delimited text file with interpolated DEM values')
     parser.add_argument('-one_pt_per_cell', '--one_pt_per_cell', dest='onepointpercell', nargs='?', const=True, type=bool,
-                        help='Plot error distribution plot [boolean]')
+                        help='Only use one check point per grid cell [boolean]')
+    parser.add_argument('-method', '--method', dest='onepointpercell', nargs='?', const='interpolate', type=str,
+                        help='Method to get cell value: "sample" or "interpolate" [default="interpolate"] [str]')
     parser.add_argument('-errorplot', '--errorplot', dest='errorplot', nargs='?', const=True, type=bool,
                         help='Plot error distribution plot [boolean]')
     parser.add_argument('-mapplot', '--mapplot', dest='mapplot', nargs='?', const=False, type=bool,
@@ -321,9 +337,17 @@ def parse_cl_args():
         # Then use command line argument
         onepointpercell = args.errorplot
     else:
-        # use errorplotconst from top of script
+        # use oneptpercellconst from top of script
         onepointpercell = oneptpercellconst
     print('Point thinning = ' + str(onepointpercell))
+    
+    if args.method is not None:
+        # Then use command line argument
+        interpmethod = args.method
+    else:
+        # use methodconst from top of script
+        interpmethod = methodconst
+    print('Method = ' + interpmethod)
     
     if args.errorplot is not None:
         # Then use command line argument
@@ -348,10 +372,10 @@ def main():
     """ Operations if demValidate called directly as script. """
     # if called directly as script then
     # get command line arguments
-    demfile, checkfile, outfile, onepointpercell, errorplot, mapplot = parse_cl_args()
+    demfile, checkfile, outfile, onepointpercell, interpmethod, errorplot, mapplot = parse_cl_args()
 
     # run dem validation
-    valstats, df, dem, aff = dem_validate(demfile, checkfile, outfile, one_pt_per_cell=onepointpercell)
+    valstats, df, dem, aff = dem_validate(demfile, checkfile, outfile, one_pt_per_cell=onepointpercell, method=interpmethod)
 
     # error distribution plot?
     if errorplot:
