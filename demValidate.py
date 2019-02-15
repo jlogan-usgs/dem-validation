@@ -41,11 +41,11 @@ from matplotlib.colors import LightSource
 # (Command line arguments are used preferentially)
 ######INPUTS######
 # path to DEM (has to be geotiff)
-demfileconst = r"T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\eval2\NoPolar_SubAirGCP_CamSubset_Ru10_ManEdit_grnd_depadd_refrCor_10cm.tif"
+demfileconst = r"T:\mygrid.tif"
 # path to check points csv (must have columns 'n, 'e', 'z')
-checkfileconst = r'T:\UAS\2018-617-FA\UAS\products\RefractionCorrection\shoals_check_pts\mkshls_uascheck_xyzp.csv'
+checkfileconst = r'T:\mycheckfile.csv'
 # path to output csv file
-outfileconst = r'D:\temp\temp.csv'
+outfileconst = r'T:\myoutfile.csv'
 
 
 # one point per cell? [default = True]
