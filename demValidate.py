@@ -106,7 +106,7 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     # `col, row = ~a * (x, y)`
 
     # get affine transform
-    aff = dataset.affine
+    aff = dataset.transform
 
     # load check points into dataframe
     valdf = pd.read_csv(checkfile)
