@@ -110,6 +110,15 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
 
     # load check points into dataframe
     valdf = pd.read_csv(checkfile)
+    #lower case headers
+    valdf = col_lower_case(valdf)
+    
+    #change northing, easting, elevation to n,e,z if necessary
+    col_dict = {'n': 'northing', 'e': 'easting', 'z': 'elevation'} 
+    for key, value in col_dict.items():
+        if (key not in valdf.columns) & (value in valdf.columns):
+            valdf.rename(columns={value: key}, inplace=True)
+    
     # rename z column to distinguish from dem
     valdf.rename(columns={'z': 'gps_z'}, inplace=True)
 
@@ -367,6 +376,11 @@ def parse_cl_args():
 
     return demfile, checkfile, outfile, onepointpercell, interpmethod, errorplot, mapplot
 
+def col_lower_case(df):
+    '''Lower case all column headers'''
+    outdf = df.copy(deep=True)
+    outdf.columns = outdf.columns.str.lower()
+    return outdf
 
 def main():
     """ Operations if demValidate called directly as script. """
