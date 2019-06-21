@@ -86,8 +86,6 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         dem: numpy array of dem (for use in plot_map function)
         aff: affine transform (for use in plot_map function)
     """
-    print(f'Interpolation method = {kwargs.get("method")}')
-
     # load DEM (geotiff)
     dataset = rasterio.open(demfile)
 
@@ -139,11 +137,13 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
     
     if kwargs.get('method') == 'interpolate' or kwargs.get('method') is None:
         # use map_coordinates to do bilinear interp and place result in new df column
+        print(f'Interpolation method = BILINEAR')
         # need to transpose to get into rows to place into df
         valdf['dem_z'] = np.transpose(
             ndimage.map_coordinates(dem, [[valdf['demrow']], [valdf['demcol']]], order=1, mode='constant', cval=-9999))
     elif kwargs.get('method') == 'sample':
         #sample value at pixel
+        print(f'Interpolation method = GRID SAMPLE/NO INTERPOLATION')
         #get integer index of rows, col.  Indices need to be floored for proper
         #registration.  (eg. -278.1 -> -279, 1179.9 -> 1179)
         valdf['demcol_int'] = np.floor(valdf['demcol']).astype(int)
