@@ -87,10 +87,11 @@ def dem_validate(demfile, checkfile, outfile, **kwargs):
         aff: affine transform (for use in plot_map function)
     """
     # load DEM (geotiff)
-    dataset = rasterio.open(demfile)
-
-    # get numpy array
-    dem = dataset.read(1)
+    # dataset = rasterio.open(demfile)
+    with rasterio.open(demfile) as dataset:
+    
+        # get numpy array
+        dem = dataset.read(1)
 
     # convert nodatavalues to nans
     dem[dem == dataset.nodatavals] = np.nan
@@ -226,10 +227,10 @@ def plot_error_dist(valdf):
     # place text at 40% on right, 80% top
     ax.text(np.abs(np.array(ax.get_xlim())).max() * 0.4, np.array(ax.get_ylim()).max() * 0.8, s, alpha=0.8, fontsize=10)
 
-    ax.set_xlabel('Elevation difference, GPS - DEM [m]')
+    ax.set_xlabel('Elevation difference, GPS - DSM [m]')
     ax.set_ylabel('count [n]')
 
-    fig_hist.suptitle('DEM Validation', fontstyle='italic')
+    fig_hist.suptitle('DSM Validation', fontstyle='italic')
     plt.show()
 
     return fig_hist
