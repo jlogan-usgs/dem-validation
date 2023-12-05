@@ -26,7 +26,7 @@ example usage:
 
 @author: jlogan
 """
-
+import osgeo
 import rasterio
 import numpy as np
 import pandas as pd
