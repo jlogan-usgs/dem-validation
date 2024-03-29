@@ -26,6 +26,10 @@ example usage:
 
 @author: jlogan
 """
+<<<<<<< HEAD
+=======
+
+>>>>>>> ec569e2f989ad5f4ac595c19bd4034e28c84d978
 import osgeo
 import rasterio
 import numpy as np
