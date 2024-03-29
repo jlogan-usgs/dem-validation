@@ -205,11 +205,13 @@ def plot_error_dist(valdf):
     sns.set_style('darkgrid')
     fig_hist = plt.figure(figsize=(7.5, 5))
 
-    ax = sns.distplot(valdf['resid'], bins=50, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
+    ax = sns.histplot(valdf['resid'], bins=50, kde=False, alpha=0.4, edgecolor=(0,0,0, .4), linewidth=0.5)
     # set xlimit to be equal on either side of zero
     ax.set_xlim(np.abs(np.array(ax.get_xlim())).max() * -1, np.abs(np.array(ax.get_xlim())).max())
-    # plot vertical line at 0
+    # plot black vertical line at 0
     ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
+    #plot red vertical line at mean
+    ax.axvline(x=valdf['resid'].mean(), color='r', linestyle='--', alpha=0.8, linewidth=0.8)
 
     # Calc RMSE, mean, mae, stdev from resid for plot annotation (these were already calculated in dem_validate function
     # but recalculating here to reduce dependency
@@ -231,9 +233,77 @@ def plot_error_dist(valdf):
     ax.set_ylabel('count [n]')
 
     fig_hist.suptitle('DSM Validation', fontstyle='italic')
-    plt.show()
+    # plt.show()
 
     return fig_hist
+
+def plot_error_dist_with_biplot(valdf):
+    """
+    Function to plot two subplots on a figure. Top plot is biplot of point elevation vs 
+    DEM elevation. Bottom plot is histogram showing distribution of residuals from dem validation.
+
+    args:
+        valdf: dataframe with 'gps_z', 'dem_z', and 'resid' (residual) at each checkpoint.  Created by dem_validation function.
+
+    returns:
+        fig_hist: handle on plot object
+    """
+    sns.set_style('darkgrid')
+    fig_hist = plt.figure(figsize=(7.5, 10))
+
+    #new df for biplot
+    bpdf = valdf.copy(deep=True)
+    if len(bpdf) > 20000:
+        bpdf = bpdf.sample(n=20000, random_state=1)
+    
+    ### biplot
+    ax = plt.subplot(2,1,1)
+    ax = plt.gca()
+    ax.relim() 
+    ax.set_aspect('equal', adjustable='box')
+    plt.scatter(bpdf['gps_z'],bpdf['dem_z'], alpha=0.1, s=2)
+    
+    minmin = min([min(bpdf['gps_z'].tolist()), min(bpdf['dem_z'].tolist())])
+    maxmax = max([max(bpdf['gps_z'].tolist()), max(bpdf['dem_z'].tolist())])
+    plt.plot([minmin,maxmax], [minmin,maxmax], ls="--", c='k',alpha=0.8, linewidth=1.2)
+    ax.set_xlabel('Single Beam [m, NAVD88]')
+    ax.set_ylabel('Swath [m, NAVD88]')
+    
+    plt.subplot(2,1,2)
+    ax = plt.gca()
+    # ax = sns.distplot(df['single_minus_swath'], bins=100, kde=False, hist_kws=dict(edgecolor="b", linewidth=0.5))
+    ax = sns.histplot(valdf['resid'], bins=90, kde=False, alpha=0.4,edgecolor=(0,0,0, .4),linewidth=0.5)
+    
+    ax.set_aspect('auto', adjustable='box')
+    
+    ax.set_xlim(-1.5, 1.5)
+    # plot vertical line at 0
+    ax.axvline(x=0, color='k', linestyle='--', alpha=0.8, linewidth=0.8)
+    #plot vertical line at mean
+    ax.axvline(x=valdf['resid'].mean(), color='r', linestyle='--', alpha=0.8, linewidth=0.8)
+    
+    # Calc RMSE, mean, mae, stdev from resid for plot annotation (these were already calculated in dem_validate function
+    # but recalculating here to reduce dependency
+    rmse = ((valdf['gps_z'] - valdf['dem_z']) ** 2).mean() ** .5
+    mean_error = valdf['resid'].mean()
+    mae = valdf['resid'].abs().mean()
+    stdev = valdf['resid'].std()
+    
+    # make annotation str
+    s = ('RMSE:                   ' + "{:0.3f}".format(rmse) + 'm' + '\n' +
+         'Mean Error:          ' + "{:0.3f}".format(mean_error) + 'm' + '\n' +
+         'Std. Dev. of Error: ' + "{:0.3f}".format(stdev) + 'm' + '\n' +
+         'MAE:                     ' + "{:0.3f}".format(mae) + 'm' + '\n' +
+         'n:                           ' + str(len(valdf)))
+    
+    ax.text(np.abs(np.array(ax.get_xlim())).max() * 0.4, np.array(ax.get_ylim()).max() * 0.75, s, alpha=0.8, fontsize=10)
+    
+    ax.set_xlabel('Elevation difference, Single Beam - Swath [m]')
+    ax.set_ylabel('count [n]')
+    
+    fig_hist.suptitle('Point elevation compared to DEM elevation', fontstyle='italic')
+    
+    plt.tight_layout()
 
 
 def plot_map(dem, valdf, aff):
